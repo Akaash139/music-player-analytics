@@ -34,7 +34,7 @@ A premium, modern Music Analytics Dashboard built with **Node.js**, **Express**,
    ```bash
    mysql -u root -p musicplayerdb < backup_fixed.sql
    ```
-   *(Note: The default credentials in `server.js` are `user: 'root'` and `password: '1234'`. Update these if necessary.)*
+   
 
 ### 2. Installation
 Clone the repository and install dependencies:
