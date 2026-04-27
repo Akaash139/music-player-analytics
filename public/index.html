@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicDB Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080810;
+  --surface:#0e0e1a;
+  --surface2:#141424;
+  --surface3:#1a1a2e;
+  --border:#ffffff0f;
+  --border2:#ffffff18;
+  --gold:#f0c040;
+  --gold2:#c8941a;
+  --rust:#d45a2a;
+  --blue:#4a9eff;
+  --green:#3dd68c;
+  --purple:#a78bfa;
+  --pink:#f472b6;
+  --text:#f0ece4;
+  --text2:#9994a8;
+  --text3:#5a5668;
+  --glow:rgba(240,192,64,0.15);
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* ── SCROLLBAR ────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── SCREENS ──────────────────────────────────── */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+
+/* ══════════════════════════════════════════════
+   LOGIN / REGISTER SCREEN
+══════════════════════════════════════════════ */
+#authScreen{
+  align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(240,192,64,0.06) 0%,transparent 70%),
+             var(--bg);
+  position:relative;overflow:hidden;
+}
+
+#authScreen::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black,transparent);
+}
+
+.auth-brand{
+  position:absolute;top:2.5rem;left:3rem;
+  display:flex;align-items:center;gap:.75rem;
+}
+.auth-brand-icon{font-size:1.6rem}
+.auth-brand-name{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:1.2rem;letter-spacing:.05em;color:var(--text);
+}
+.auth-brand-name span{color:var(--gold)}
+
+.auth-card{
+  position:relative;z-index:1;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  padding:3rem;
+  width:100%;max-width:420px;
+  box-shadow:0 0 80px rgba(240,192,64,0.04),0 40px 80px rgba(0,0,0,0.6);
+}
+
+.auth-title{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:2rem;letter-spacing:.02em;margin-bottom:.4rem;
+}
+.auth-title span{color:var(--gold)}
+.auth-sub{font-size:.7rem;color:var(--text2);letter-spacing:.1em;margin-bottom:2.5rem}
+
+.tabs-auth{
+  display:flex;border:1px solid var(--border2);
+  border-radius:3px;margin-bottom:2rem;overflow:hidden;
+}
+.tab-auth{
+  flex:1;padding:.6rem;background:none;border:none;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text2);
+  cursor:pointer;transition:.2s;
+}
+.tab-auth.active{background:var(--surface2);color:var(--gold)}
+
+.form-group{margin-bottom:1.25rem}
+.form-label{
+  display:block;font-size:.62rem;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:.5rem;
+}
+.form-input{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border2);border-radius:3px;
+  padding:.75rem 1rem;color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:.78rem;
+  outline:none;transition:.2s;
+}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--glow)}
+.form-input::placeholder{color:var(--text3)}
+
+.btn{
+  width:100%;padding:.85rem;
+  background:var(--gold);border:none;border-radius:3px;
+  font-family:'Syne',sans-serif;font-weight:700;
+  font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;
+  color:#080810;cursor:pointer;transition:.2s;
+  margin-top:.5rem;
+}
+.btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+
+.auth-error{
+  background:rgba(212,90,42,0.15);border:1px solid rgba(212,90,42,0.3);
+  border-radius:3px;padding:.7rem 1rem;
+  font-size:.68rem;letter-spacing:.08em;color:var(--rust);
+  margin-bottom:1rem;display:none;
+}
+
+.auth-hint{
+  text-align:center;font-size:.62rem;color:var(--text3);
+  letter-spacing:.08em;margin-top:1.5rem;
+}
+.auth-hint span{color:var(--gold);cursor:pointer}
+
+/* ══════════════════════════════════════════════
+   MAIN APP SCREEN
+══════════════════════════════════════════════ */
+#appScreen{flex-direction:column}
+
+/* ── Topbar ───────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 2rem;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(20px);
+}
+
+.topbar-brand{display:flex;align-items:center;gap:.6rem}
+.topbar-icon{
+  width:32px;height:32px;
+  background:var(--gold);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;color:#080810;
+  flex-shrink:0;
+}
+.topbar-name{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:1.05rem;letter-spacing:.05em;
+}
+.topbar-name span{color:var(--gold)}
+
+.topbar-search{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:3px;padding:.5rem .9rem;
+  width:280px;transition:.2s;
+}
+.topbar-search:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px var(--glow)}
+.topbar-search input{
+  background:none;border:none;outline:none;
+  color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;width:100%;
+}
+.topbar-search input::placeholder{color:var(--text3)}
+.search-icon{color:var(--text3);font-size:.8rem;flex-shrink:0}
+
+.topbar-right{display:flex;align-items:center;gap:1rem}
+
+.user-pill{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:20px;padding:.4rem .9rem;
+}
+.user-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--rust));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:700;color:#080810;
+  flex-shrink:0;
+}
+.user-name{font-size:.68rem;letter-spacing:.08em;color:var(--text)}
+
+.btn-logout{
+  background:none;border:1px solid var(--border2);border-radius:3px;
+  padding:.4rem .8rem;color:var(--text2);
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  transition:.2s;
+}
+.btn-logout:hover{border-color:var(--rust);color:var(--rust)}
+
+/* ── Layout ───────────────────────────────────── */
+.app-layout{display:flex;flex:1;min-height:0}
+
+/* ── Sidebar ──────────────────────────────────── */
+.sidebar{
+  width:200px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:1.5rem 0;
+  overflow-y:auto;
+}
+
+.sidebar-section{margin-bottom:1.5rem}
+.sidebar-label{
+  font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--text3);padding:.3rem 1.25rem .6rem;
+}
+
+.nav-item{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.6rem 1.25rem;cursor:pointer;
+  transition:.15s;border-left:2px solid transparent;
+  font-size:.72rem;letter-spacing:.08em;color:var(--text2);
+  background:none;border-right:none;border-top:none;border-bottom:none;
+  width:100%;text-align:left;font-family:'JetBrains Mono',monospace;
+}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{
+  color:var(--gold);border-left-color:var(--gold);
+  background:rgba(240,192,64,0.05);
+}
+.nav-item-icon{font-size:.9rem;width:16px;text-align:center;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;background:var(--surface3);
+  color:var(--text3);font-size:.55rem;padding:1px 5px;
+  border-radius:2px;
+}
+.nav-item.active .nav-badge{background:rgba(240,192,64,0.15);color:var(--gold)}
+
+/* ── Main content ─────────────────────────────── */
+.main-content{flex:1;overflow-y:auto;padding:2rem}
+
+/* ── Page header ──────────────────────────────── */
+.page-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:2rem;padding-bottom:1.25rem;
+  border-bottom:1px solid var(--border);
+}
+.page-title{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:1.6rem;letter-spacing:.03em;
+}
+.page-title span{color:var(--gold)}
+.page-meta{font-size:.62rem;color:var(--text3);letter-spacing:.1em}
+
+/* ── Summary cards ────────────────────────────── */
+.summary-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:3px;
+  overflow:hidden;margin-bottom:2rem;
+}
+.summary-card{
+  background:var(--surface);padding:1.5rem;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.summary-label{
+  font-size:.6rem;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--text3);
+}
+.summary-value{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:2rem;letter-spacing:.02em;
+}
+.summary-card:nth-child(1) .summary-value{color:var(--gold)}
+.summary-card:nth-child(2) .summary-value{color:var(--blue)}
+.summary-card:nth-child(3) .summary-value{color:var(--green)}
+.summary-card:nth-child(4) .summary-value{color:var(--purple)}
+.summary-icon{font-size:1.2rem;margin-bottom:.25rem}
+
+/* ── Charts grid ──────────────────────────────── */
+.charts-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1.25rem;margin-bottom:2rem;
+}
+.chart-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:3px;padding:1.5rem;
+}
+.chart-card.wide{grid-column:1/-1}
+.chart-title{
+  font-family:'Syne',sans-serif;font-weight:700;
+  font-size:.85rem;letter-spacing:.08em;margin-bottom:.3rem;
+}
+.chart-sub{font-size:.6rem;color:var(--text3);letter-spacing:.1em;margin-bottom:1.25rem}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:280px}
+
+/* ── Table view ───────────────────────────────── */
+.table-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.25rem;
+}
+.table-actions{display:flex;gap:.75rem;align-items:center}
+
+.btn-sm{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:3px;padding:.45rem .9rem;
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text2);
+  cursor:pointer;transition:.2s;display:flex;align-items:center;gap:.4rem;
+}
+.btn-sm:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm.primary{background:rgba(240,192,64,.1);border-color:rgba(240,192,64,.3);color:var(--gold)}
+.btn-sm.danger{background:rgba(212,90,42,.1);border-color:rgba(212,90,42,.3);color:var(--rust)}
+
+.data-table-wrap{
+  border:1px solid var(--border);border-radius:3px;
+  overflow:hidden;animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+table{width:100%;border-collapse:collapse;font-size:.7rem}
+thead{background:var(--surface2)}
+thead th{
+  padding:.8rem 1rem;text-align:left;
+  font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text3);font-weight:500;white-space:nowrap;
+  border-bottom:1px solid var(--border);
+}
+thead th:first-child{color:var(--gold);width:44px}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:.15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(240,192,64,.03)}
+tbody td{padding:.8rem 1rem;vertical-align:middle}
+tbody td:first-child{color:var(--text3);font-size:.58rem}
+
+.cell-muted{color:var(--text3)}
+.cell-email{color:var(--blue)}
+.cell-null{color:var(--text3);font-style:italic}
+
+.dur-bar-wrap{display:flex;align-items:center;gap:.5rem}
+.dur-bar{width:50px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden;flex-shrink:0}
+.dur-bar-fill{height:100%;background:linear-gradient(90deg,var(--rust),var(--gold));border-radius:2px}
+
+.tag{
+  display:inline-block;padding:2px 7px;border-radius:2px;
+  font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;
+}
+.tag-track{background:rgba(212,90,42,.12);color:var(--rust);border:1px solid rgba(212,90,42,.2)}
+.tag-user{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
+.tag-artist{background:rgba(74,158,255,.1);color:var(--blue);border:1px solid rgba(74,158,255,.2)}
+.tag-album{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2)}
+.tag-genre{background:rgba(61,214,140,.1);color:var(--green);border:1px solid rgba(61,214,140,.2)}
+.tag-playlist{background:rgba(244,114,182,.1);color:var(--pink);border:1px solid rgba(244,114,182,.2)}
+
+.row-actions{display:flex;gap:.4rem;opacity:0;transition:.15s}
+tr:hover .row-actions{opacity:1}
+.icon-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:.8rem;padding:2px 5px;border-radius:2px;
+  transition:.15s;
+}
+.icon-btn:hover{background:var(--surface3)}
+.icon-btn.edit:hover{color:var(--gold)}
+.icon-btn.del:hover{color:var(--rust)}
+
+/* ── States ───────────────────────────────────── */
+.loading-wrap{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:4rem;gap:1.5rem;color:var(--text3);
+}
+.loader{
+  width:36px;height:36px;border:2px solid var(--border2);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase}
+
+.state-msg{
+  padding:3rem;text-align:center;color:var(--text3);
+  font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;
+  border:1px dashed var(--border2);border-radius:3px;
+}
+
+/* ── Search results ───────────────────────────── */
+.search-page{padding:0}
+.search-result-item{
+  display:flex;align-items:center;gap:1rem;
+  padding:.85rem 1rem;border-bottom:1px solid var(--border);
+  transition:.15s;cursor:pointer;
+}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:hover{background:rgba(240,192,64,.03)}
+.sr-num{
+  width:32px;height:32px;border-radius:3px;
+  background:var(--surface2);display:flex;align-items:center;
+  justify-content:center;font-size:.65rem;color:var(--text3);
+  flex-shrink:0;
+}
+.sr-info{flex:1}
+.sr-title{font-size:.78rem;margin-bottom:.2rem}
+.sr-meta{font-size:.62rem;color:var(--text3)}
+.sr-duration{font-size:.65rem;color:var(--text2)}
+
+/* ── Modal ────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:500;display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:4px;padding:2rem;width:100%;max-width:400px;
+  box-shadow:0 30px 60px rgba(0,0,0,.6);
+  animation:fadeUp .25s ease;
+}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.75rem;
+}
+.modal-title{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;
+}
+.modal-close{
+  background:none;border:none;color:var(--text3);
+  font-size:1.1rem;cursor:pointer;transition:.15s;
+}
+.modal-close:hover{color:var(--text)}
+.modal-actions{display:flex;gap:.75rem;margin-top:1.5rem}
+.modal-actions .btn{margin:0;flex:1}
+.modal-actions .btn.cancel{
+  background:var(--surface2);color:var(--text2);
+}
+.modal-actions .btn.cancel:hover{background:var(--surface3);color:var(--text)}
+
+/* ── Toast ────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:2rem;right:2rem;
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:3px;padding:.9rem 1.25rem;
+  font-size:.7rem;letter-spacing:.08em;
+  display:flex;align-items:center;gap:.7rem;
+  transform:translateY(100px);opacity:0;
+  transition:.3s cubic-bezier(.34,1.56,.64,1);
+  z-index:1000;max-width:320px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(61,214,140,.3)}
+.toast.error{border-color:rgba(212,90,42,.3)}
+.toast-icon{font-size:1rem}
+
+/* ── Responsive ───────────────────────────────── */
+@media(max-width:900px){
+  .charts-grid{grid-template-columns:1fr}
+  .chart-card.wide{grid-column:auto}
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .sidebar{width:160px}
+  .topbar-search{width:200px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════ -->
+<div id="authScreen" class="screen">
+  <div class="auth-brand">
+    <span class="auth-brand-icon">◈</span>
+    <span class="auth-brand-name">Music<span>DB</span></span>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-title">Welcome<br><span>Back.</span></div>
+    <div class="auth-sub">MUSIC ANALYTICS PLATFORM · DBMS PROJECT</div>
+
+    <div class="tabs-auth">
+      <button class="tab-auth active" onclick="setAuthMode('login')">Login</button>
+      <button class="tab-auth" onclick="setAuthMode('register')">Register</button>
+    </div>
+
+    <div id="authError" class="auth-error"></div>
+
+    <!-- Login form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="loginEmail" class="form-input" type="email" placeholder="user1@gmail.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="loginPassword" class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn" onclick="doLogin()">Sign In →</button>
+      <div class="auth-hint">Don't have an account? <span onclick="setAuthMode('register')">Register</span></div>
+    </div>
+
+    <!-- Register form -->
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input id="regUsername" class="form-input" type="text" placeholder="yourname">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="regEmail" class="form-input" type="email" placeholder="you@gmail.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="regPassword" class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn" onclick="doRegister()">Create Account →</button>
+      <div class="auth-hint">Already have an account? <span onclick="setAuthMode('login')">Sign in</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN APP SCREEN
+══════════════════════════════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-icon">◈</div>
+      <span class="topbar-name">Music<span>DB</span></span>
+    </div>
+    <div class="topbar-search">
+      <span class="search-icon">⌕</span>
+      <input id="searchInput" type="text" placeholder="Search tracks..." oninput="onSearchInput(this.value)">
+    </div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <span class="user-name" id="userNameDisplay">—</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <button class="nav-item active" data-tab="analytics" onclick="switchTab('analytics')">
+          <span class="nav-item-icon">◎</span> Analytics
+        </button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tables</div>
+        <button class="nav-item" data-tab="tracks" onclick="switchTab('tracks')">
+          <span class="nav-item-icon">♪</span> Tracks
+          <span class="nav-badge" id="nb-tracks">—</span>
+        </button>
+        <button class="nav-item" data-tab="users" onclick="switchTab('users')">
+          <span class="nav-item-icon">◉</span> Users
+          <span class="nav-badge" id="nb-users">—</span>
+        </button>
+        <button class="nav-item" data-tab="artists" onclick="switchTab('artists')">
+          <span class="nav-item-icon">★</span> Artists
+          <span class="nav-badge" id="nb-artists">—</span>
+        </button>
+        <button class="nav-item" data-tab="albums" onclick="switchTab('albums')">
+          <span class="nav-item-icon">◈</span> Albums
+          <span class="nav-badge" id="nb-albums">—</span>
+        </button>
+        <button class="nav-item" data-tab="genres" onclick="switchTab('genres')">
+          <span class="nav-item-icon">◇</span> Genres
+          <span class="nav-badge" id="nb-genres">—</span>
+        </button>
+        <button class="nav-item" data-tab="playlists" onclick="switchTab('playlists')">
+          <span class="nav-item-icon">≡</span> Playlists
+          <span class="nav-badge" id="nb-playlists">—</span>
+        </button>
+        <button class="nav-item" data-tab="history" onclick="switchTab('history')">
+          <span class="nav-item-icon">◷</span> Play History
+          <span class="nav-badge" id="nb-history">—</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content" id="mainContent"></div>
+  </div>
+</div>
+
+<!-- ── Add / Edit Track Modal ──────────────────── -->
+<div class="modal-overlay" id="trackModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add Track</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <input type="hidden" id="editTrackId">
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input id="trackTitle" class="form-input" type="text" placeholder="Song name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Duration (seconds)</label>
+      <input id="trackDuration" class="form-input" type="number" placeholder="240">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Album ID (optional)</label>
+      <input id="trackAlbum" class="form-input" type="number" placeholder="1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveTrack()">Save Track</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✓</span>
+  <span id="toastMsg">Done</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentUser = null;
+let currentTab = 'analytics';
+const cache = {};
+let charts = {};
+let searchTimer = null;
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = type === 'success' ? '✓' : '✕';
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+function setAuthMode(mode) {
+  const isLogin = mode === 'login';
+  document.getElementById('loginForm').style.display = isLogin ? '' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : '';
+  document.querySelectorAll('.tab-auth').forEach((t,i) =>
+    t.classList.toggle('active', i === (isLogin ? 0 : 1)));
+  clearAuthError();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearAuthError() {
+  document.getElementById('authError').style.display = 'none';
+}
+
+async function doLogin() {
+  clearAuthError();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return showAuthError('Please fill in all fields');
+  try {
+    const r = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }) });
+    const d = await r.json();
+    if (!r.ok) return showAuthError(d.error || 'Login failed');
+    enterApp(d);
+  } catch { showAuthError('Server unreachable'); }
+}
+
+async function doRegister() {
+  clearAuthError();
+  const username = document.getElementById('regUsername').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  if (!username || !email || !password) return showAuthError('Please fill in all fields');
+  try {
+    const r = await fetch('/register', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, email, password }) });
+    const d = await r.json();
+    if (!r.ok) return showAuthError(d.error || 'Registration failed');
+    enterApp(d);
+  } catch { showAuthError('Server unreachable'); }
+}
+
+async function doLogout() {
+  await fetch('/logout', { method:'POST' });
+  currentUser = null;
+  Object.keys(cache).forEach(k => delete cache[k]);
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+  document.getElementById('authScreen').classList.add('active');
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+function enterApp(user) {
+  currentUser = user;
+  document.getElementById('userNameDisplay').textContent = user.username;
+  document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('appScreen').classList.add('active');
+  switchTab('analytics');
+}
+
+// ══════════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(n =>
+    n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('searchInput').value = '';
+  loadTab(tab);
+}
+
+async function loadTab(tab) {
+  const mc = document.getElementById('mainContent');
+  if (tab === 'analytics') { renderAnalytics(); return; }
+  if (tab === 'search') return;
+
+  const endpoints = {
+    tracks:'/tracks', users:'/users', artists:'/artists',
+    albums:'/albums', genres:'/genres', playlists:'/playlists', history:'/history'
+  };
+  const ep = endpoints[tab];
+  if (!ep) return;
+
+  mc.innerHTML = `<div class="loading-wrap"><div class="loader"></div><div class="loading-text">Loading ${tab}</div></div>`;
+
+  if (cache[tab]) { renderTableView(tab, cache[tab]); return; }
+
+  try {
+    const r = await fetch(ep);
+    if (r.status === 401) { doLogout(); return; }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    cache[tab] = data;
+    const nb = document.getElementById(`nb-${tab}`);
+    if (nb) nb.textContent = data.length;
+    renderTableView(tab, data);
+  } catch(e) {
+    mc.innerHTML = `<div class="state-msg">⚠ Could not load ${tab}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// ANALYTICS
+// ══════════════════════════════════════════════
+async function renderAnalytics() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `
+    <div class="page-header">
+      <div class="page-title"><span>Analytics</span> Dashboard</div>
+      <div class="page-meta">Live from musicplayerdb</div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="summary-icon">♪</div><div class="summary-label">Total Tracks</div><div class="summary-value" id="sv-tracks">—</div></div>
+      <div class="summary-card"><div class="summary-icon">◉</div><div class="summary-label">Total Users</div><div class="summary-value" id="sv-users">—</div></div>
+      <div class="summary-card"><div class="summary-icon">◷</div><div class="summary-label">Total Plays</div><div class="summary-value" id="sv-plays">—</div></div>
+      <div class="summary-card"><div class="summary-icon">★</div><div class="summary-label">Total Artists</div><div class="summary-value" id="sv-artists">—</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Top 10 Most Played Tracks</div>
+        <div class="chart-sub">BY PLAY COUNT · ALL TIME</div>
+        <div class="chart-wrap tall"><canvas id="chartTopTracks"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Genre Distribution</div>
+        <div class="chart-sub">PLAYS BY GENRE</div>
+        <div class="chart-wrap"><canvas id="chartGenre"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">User Activity</div>
+        <div class="chart-sub">PLAYS PER USER</div>
+        <div class="chart-wrap"><canvas id="chartUsers"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Album Popularity</div>
+        <div class="chart-sub">PLAYS PER ALBUM</div>
+        <div class="chart-wrap"><canvas id="chartAlbums"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Device Breakdown</div>
+        <div class="chart-sub">STREAMS BY DEVICE TYPE</div>
+        <div class="chart-wrap"><canvas id="chartDevice"></canvas></div>
+      </div>
+    </div>`;
+
+  // Destroy old charts
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const COLORS = ['#f0c040','#4a9eff','#3dd68c','#a78bfa','#f472b6','#d45a2a','#60c8e8','#ffa040'];
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const textColor = '#9994a8';
+
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}, tooltip:{
+      backgroundColor:'#141424',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,
+      titleColor:'#f0ece4',bodyColor:'#9994a8',padding:10,
+    }},
+    scales:{
+      x:{grid:{color:gridColor},ticks:{color:textColor,font:{family:'JetBrains Mono',size:10}}},
+      y:{grid:{color:gridColor},ticks:{color:textColor,font:{family:'JetBrains Mono',size:10}}}
+    }
+  };
+
+  // Summary
+  try {
+    const r = await fetch('/analytics/summary');
+    const d = await r.json();
+    document.getElementById('sv-tracks').textContent = d.tracks?.count ?? '—';
+    document.getElementById('sv-users').textContent = d.users?.count ?? '—';
+    document.getElementById('sv-plays').textContent = d.plays?.count ?? '—';
+    document.getElementById('sv-artists').textContent = d.artists?.count ?? '—';
+  } catch {}
+
+  // Top tracks
+  try {
+    const r = await fetch('/analytics/top-tracks');
+    const d = await r.json();
+    charts.topTracks = new Chart(document.getElementById('chartTopTracks'), {
+      type:'bar',
+      data:{
+        labels: d.map(x => x.title.length > 16 ? x.title.slice(0,14)+'…' : x.title),
+        datasets:[{
+          data: d.map(x => x.play_count),
+          backgroundColor: d.map((_,i) => COLORS[i % COLORS.length] + '33'),
+          borderColor: d.map((_,i) => COLORS[i % COLORS.length]),
+          borderWidth:1, borderRadius:3,
+        }]
+      },
+      options:{...baseOpts, plugins:{...baseOpts.plugins,
+        tooltip:{...baseOpts.plugins.tooltip,callbacks:{
+          label: ctx => ` ${ctx.parsed.y} plays`
+        }}
+      }}
+    });
+  } catch {}
+
+  // Genre doughnut
+  try {
+    const r = await fetch('/analytics/genre-stats');
+    const d = await r.json();
+    charts.genre = new Chart(document.getElementById('chartGenre'), {
+      type:'doughnut',
+      data:{
+        labels: d.map(x => x.genre_name),
+        datasets:[{
+          data: d.map(x => x.play_count),
+          backgroundColor: COLORS.map(c => c + 'bb'),
+          borderColor: 'rgba(0,0,0,0.3)', borderWidth:2,
+          hoverOffset:6,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,position:'right',
+            labels:{color:textColor,font:{family:'JetBrains Mono',size:10},boxWidth:10,padding:10}},
+          tooltip:{...baseOpts.plugins.tooltip}
+        }
+      }
+    });
+  } catch {}
+
+  // User activity
+  try {
+    const r = await fetch('/analytics/user-activity');
+    const d = await r.json();
+    charts.users = new Chart(document.getElementById('chartUsers'), {
+      type:'bar',
+      data:{
+        labels: d.map(x => x.username),
+        datasets:[{
+          data: d.map(x => x.play_count),
+          backgroundColor:'rgba(74,158,255,0.2)',
+          borderColor:'#4a9eff',borderWidth:1,borderRadius:3,
+        }]
+      },
+      options:baseOpts
+    });
+  } catch {}
+
+  // Album stats
+  try {
+    const r = await fetch('/analytics/album-stats');
+    const d = await r.json();
+    charts.albums = new Chart(document.getElementById('chartAlbums'), {
+      type:'bar',
+      data:{
+        labels: d.map(x => x.album_name),
+        datasets:[{
+          data: d.map(x => x.play_count),
+          backgroundColor:'rgba(167,139,250,0.2)',
+          borderColor:'#a78bfa',borderWidth:1,borderRadius:3,
+        }]
+      },
+      options:{...baseOpts,indexAxis:'y'}
+    });
+  } catch {}
+
+  // Device doughnut
+  try {
+    const r = await fetch('/analytics/device-stats');
+    const d = await r.json();
+    charts.device = new Chart(document.getElementById('chartDevice'), {
+      type:'pie',
+      data:{
+        labels: d.map(x => x.device_type),
+        datasets:[{
+          data: d.map(x => x.count),
+          backgroundColor: COLORS.map(c => c + 'bb'),
+          borderColor:'rgba(0,0,0,0.3)',borderWidth:2,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,position:'right',
+            labels:{color:textColor,font:{family:'JetBrains Mono',size:10},boxWidth:10,padding:10}},
+          tooltip:{...baseOpts.plugins.tooltip}
+        }
+      }
+    });
+  } catch {}
+}
+
+// ══════════════════════════════════════════════
+// TABLE RENDERER
+// ══════════════════════════════════════════════
+function formatDur(sec) {
+  if (!sec && sec !== 0) return '—';
+  return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
+}
+
+function renderTableView(tab, data) {
+  const mc = document.getElementById('mainContent');
+  const isTrack = tab === 'tracks';
+  const titles = {
+    tracks:'Track',users:'User',artists:'Artist',
+    albums:'Album',genres:'Genre',playlists:'Playlist',history:'Play History'
+  };
+
+  const toolbar = isTrack ? `
+    <div class="table-toolbar">
+      <div class="page-title"><span>${titles[tab]}</span> Table</div>
+      <div class="table-actions">
+        <button class="btn-sm primary" onclick="openAddModal()">+ Add Track</button>
+        <span class="page-meta">${data.length} rows</span>
+      </div>
+    </div>` : `
+    <div class="page-header">
+      <div class="page-title"><span>${titles[tab]}</span> Table</div>
+      <div class="page-meta">${data.length} rows</div>
+    </div>`;
+
+  if (!data.length) {
+    mc.innerHTML = toolbar + `<div class="state-msg">No records found</div>`;
+    return;
+  }
+
+  const keys = Object.keys(data[0]);
+  const heads = ['#', ...keys, ...(isTrack ? ['Actions'] : [])].map(k =>
+    `<th>${k === '#' ? '#' : k.replace(/_/g,' ')}</th>`).join('');
+
+  const rows = data.map((row, i) => {
+    const cells = keys.map(k => {
+      let v = row[k];
+      if (v === null || v === undefined) return `<td><span class="cell-null">null</span></td>`;
+      if (k === 'duration' || k === 'seconds_played') {
+        const pct = Math.min(100,(v/400)*100);
+        return `<td><div class="dur-bar-wrap"><span>${formatDur(v)}</span>
+          <div class="dur-bar"><div class="dur-bar-fill" style="width:${pct}%"></div></div>
+        </div></td>`;
+      }
+      if (k.includes('_at') || k.includes('date'))
+        return `<td><span class="cell-muted">${String(v).split('T')[0]}</span></td>`;
+      if (k.includes('email')) return `<td><span class="cell-email">${v}</span></td>`;
+      return `<td>${v}</td>`;
+    }).join('');
+
+    const actions = isTrack ? `<td><div class="row-actions">
+      <button class="icon-btn edit" title="Edit" onclick='openEditModal(${JSON.stringify(row)})'>✎</button>
+      <button class="icon-btn del" title="Delete" onclick="deleteTrack(${row.track_id})">✕</button>
+    </div></td>` : '';
+
+    return `<tr><td>${i+1}</td>${cells}${actions}</tr>`;
+  }).join('');
+
+  mc.innerHTML = `${toolbar}
+    <div class="data-table-wrap">
+      <table>
+        <thead><tr>${heads}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════
+function onSearchInput(val) {
+  clearTimeout(searchTimer);
+  if (!val.trim()) { if (currentTab === 'search') switchTab('analytics'); return; }
+  searchTimer = setTimeout(() => doSearch(val), 320);
+}
+
+async function doSearch(q) {
+  currentTab = 'search';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `<div class="loading-wrap"><div class="loader"></div><div class="loading-text">Searching</div></div>`;
+  try {
+    const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    if (!d.length) {
+      mc.innerHTML = `
+        <div class="page-header"><div class="page-title"><span>Search</span> Results</div><div class="page-meta">0 results for "${q}"</div></div>
+        <div class="state-msg">No tracks found for "${q}"</div>`;
+      return;
+    }
+    const items = d.map((t,i) => `
+      <div class="search-result-item">
+        <div class="sr-num">${i+1}</div>
+        <div class="sr-info">
+          <div class="sr-title">${t.title}</div>
+          <div class="sr-meta">${t.artist_name || '—'} · ${t.album_name || '—'}</div>
+        </div>
+        <div class="sr-duration">${formatDur(t.duration)}</div>
+      </div>`).join('');
+    mc.innerHTML = `
+      <div class="page-header">
+        <div class="page-title"><span>Search</span> Results</div>
+        <div class="page-meta">${d.length} results for "${q}"</div>
+      </div>
+      <div class="data-table-wrap">${items}</div>`;
+  } catch {
+    mc.innerHTML = `<div class="state-msg">⚠ Search failed</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// TRACK CRUD
+// ══════════════════════════════════════════════
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Add Track';
+  document.getElementById('editTrackId').value = '';
+  document.getElementById('trackTitle').value = '';
+  document.getElementById('trackDuration').value = '';
+  document.getElementById('trackAlbum').value = '';
+  document.getElementById('trackModal').classList.add('open');
+}
+
+function openEditModal(track) {
+  document.getElementById('modalTitle').textContent = 'Edit Track';
+  document.getElementById('editTrackId').value = track.track_id;
+  document.getElementById('trackTitle').value = track.title;
+  document.getElementById('trackDuration').value = track.duration;
+  document.getElementById('trackAlbum').value = track.album_id || '';
+  document.getElementById('trackModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('trackModal').classList.remove('open');
+}
+
+async function saveTrack() {
+  const id = document.getElementById('editTrackId').value;
+  const title = document.getElementById('trackTitle').value.trim();
+  const duration = document.getElementById('trackDuration').value;
+  const album_id = document.getElementById('trackAlbum').value;
+  if (!title || !duration) return showToast('Title and duration are required', 'error');
+
+  const isEdit = !!id;
+  const url = isEdit ? `/tracks/${id}` : '/tracks';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  try {
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ title, duration: Number(duration), album_id: album_id || null }) });
+    const d = await r.json();
+    if (!r.ok) return showToast(d.error || 'Failed', 'error');
+    closeModal();
+    delete cache['tracks'];
+    showToast(isEdit ? 'Track updated!' : 'Track added!');
+    loadTab('tracks');
+  } catch { showToast('Server error', 'error'); }
+}
+
+async function deleteTrack(id) {
+  if (!confirm('Delete this track? This will also remove it from play history.')) return;
+  try {
+    const r = await fetch(`/tracks/${id}`, { method:'DELETE' });
+    const d = await r.json();
+    if (!r.ok) return showToast(d.error || 'Delete failed', 'error');
+    delete cache['tracks'];
+    showToast('Track deleted');
+    loadTab('tracks');
+  } catch { showToast('Server error', 'error'); }
+}
+
+// ══════════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+});
+
+// Close modal on overlay click
+document.getElementById('trackModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Enter key on auth forms
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('loginForm').style.display !== 'none') doLogin();
+    else if (document.getElementById('registerForm').style.display !== 'none') doRegister();
+  }
+});
+
+// ══════════════════════════════════════════════
+// INIT — check if already logged in
+// ══════════════════════════════════════════════
+(async () => {
+  try {
+    const r = await fetch('/me');
+    const d = await r.json();
+    if (d.loggedIn) enterApp(d);
+    else document.getElementById('authScreen').classList.add('active');
+  } catch {
+    document.getElementById('authScreen').classList.add('active');
+  }
+})();
+</script>
+</body>
+</html>
